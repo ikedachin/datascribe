@@ -1,0 +1,14 @@
+[project]
+name = "datascribe"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=2.4.2",
+    "openai>=2.23.0",
+    "pillow>=12.1.1",
+    "pymupdf>=1.27.1",
+    "pyyaml>=6.0.3",
+    "tqdm>=4.67.3",
+]

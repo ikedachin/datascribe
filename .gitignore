@@ -1,0 +1,9 @@
+# yamls
+yamls/ocr_settings.yaml
+
+
+# test files
+/test_pdfs/aiplan_g_20251223.pdf
+/imgs/
+
+**/__pycache__/

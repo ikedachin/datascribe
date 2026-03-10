@@ -1,0 +1,54 @@
+# ------------------------------------
+# OpenRouter settings
+# ------------------------------------
+inference_backend: "api_openai_comp"
+openai_api_key: "<YOUR_OPENAI_API_KEY>"
+openrouter_server_url: "https://openrouter.ai/api/v1"
+openrouter_model_name: "qwen/qwen3-vl-32b-instruct"
+openrouter: True
+
+
+
+# ------------------------------------
+# Local server settings
+# ------------------------------------
+SERVER_URL: "http://localhost:8000/v1" #"http://<YOUR_SERVER_IP>:8000/v1" #サーバーに変える。例："http://10.255.255.61:8000/v1"
+MODEL_NAME: "/home/**/model/base/Qwen3-VL-235B-Instruct" 
+#モデルパスに変える。例："/home/**/model/base/Qwen3-VL-32B-Instruct"
+
+
+
+# ------------------------------------
+# Common settings
+# ------------------------------------
+infer_config:
+  temperature: 0.0
+  top_p: 1.0
+  max_tokens: 4096
+  max_retry: 6
+batch_size: 4
+
+# # ------------------------------------
+# # pdfs file paths
+# # ------------------------------------
+# pdfs: ./pdfs/
+
+# ------------------------------------
+# Prompt file paths
+# ------------------------------------
+# object detection prompt
+prompts:
+  - ocr_prompt: ./prompts/ocr/ocr.txt
+  - objects_prompt: ./prompts/ocr/ocr_objects.txt
+  - content_understanding_prompt: ./prompts/ocr/ocr_contents.txt
+  - figure_understanding_prompt: ./prompts/ocr/ocr_figure.txt
+  - table_understanding_prompt: ./prompts/ocr/ocr_table.txt
+  - photo_understanding_prompt: ./prompts/ocr/ocr_photo.txt
+  - duplicate_check_prompt: ./prompts/ocr/ocr_duplicate_check.txt
+
+
+
+# ------------------------------------
+# output directory
+# ------------------------------------
+json_output: ./test_output/ocr/

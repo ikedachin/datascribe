@@ -1,0 +1,42 @@
+# ------------------------------------
+# OpenRouter settings
+# ------------------------------------
+openrouter: True
+openai_api_key: "<YOUR_OPENROUTER_API_KEY>"
+oupenrouter_server_url: "https://openrouter.ai/api/v1"
+openrouter_model_name: "qwen/qwen3-30b-a3b-thinking-2507"
+
+# ------------------------------------
+# Local server settings
+# ------------------------------------
+SERVER_URL: "http://localhost:8000/v1"
+MODEL_NAME: "<PATH_OR_MODEL_ID>"
+
+# ------------------------------------
+# Inference config
+# ------------------------------------
+infer_config:
+  max_tokens: 4096
+  temperature: 0
+  top_p: 1.0
+batch_size: 8
+
+# ------------------------------------
+# Prompts
+# ------------------------------------
+prompts: # 処理の順に並べること
+  - jp_en_prompt: ./prompts/sanitization/jp_en.txt
+  - en_jp_prompt: ./prompts/sanitization/en_jp.txt
+  - refine_prompt: ./prompts/sanitization/refine_prompt.txt
+  - eval_prompt:  ./prompts/sanitization/eval_prompt.txt # 評価用はevalとして分けること
+# ------------------------------------
+# Output
+# ------------------------------------
+output_path: ./json_output/sanitization_test
+
+# ------------------------------------
+# Retry settings
+# ------------------------------------
+
+max_retries: 3
+wait_seconds: 5
