@@ -235,6 +235,7 @@ class SanitizePipeline:
         Raises:
             ValueError: jp_en_promptまたはen_jp_promptが設定されていない場合。
         """
+        print(msg_debug(batched_data))
 
         # --------------------
         # プロンプトの取得
@@ -254,10 +255,10 @@ class SanitizePipeline:
         # --------------------
 
         if self.settings.get("target_key"):
-            target_key = [self.settings["target_key"]]
+            target_key = self.settings["target_key"]
         else:
             print(msg_info(f"Text file was read. Using 'text' as default key."))
-            target_key = ['text']
+            target_key = 'text'
 
         print(msg_info(f"Sanitizing key: {target_key}"))
         # 英訳/箇条書き化
@@ -285,10 +286,12 @@ class SanitizePipeline:
                 batched_data[i][f'eval_{target_key}'] = eval_point
                 batched_data[i][f'sanitized_{target_key}'] = sanitized_text
                 batched_data[i][f'similarity_{target_key}'] = self.tfidf_cosine_similarity(text_a=batched_data[i][target_key], text_b=sanitized_text)
+                batched_data[i][f'generator'] = self.settings.get("MODEL_NAME", "unknown")
         else:
             for i, (sanitized_text, mid_text) in enumerate(zip(sanitized_texts, en_texts)):
                 batched_data[i][f'sanitized_{target_key}'] = sanitized_text
                 batched_data[i][f'similarity_{target_key}'] = self.tfidf_cosine_similarity(text_a=batched_data[i][target_key], text_b=sanitized_text)
+                batched_data[i][f'generator'] = self.settings.get("MODEL_NAME", "unknown")
         self.save_results(batched_data)
 
         # self._cache_sanitized(batched_data)

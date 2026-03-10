@@ -8,7 +8,7 @@ from pathlib import Path
 import tqdm
 import yaml
 
-# from src.sanitize_pipeline import SanitizePipeline
+from pipelines.sanitize_pipeline import SanitizePipeline
 from commons.util_dataloader import ListDataLoader
 from commons.utils_msg import msg_info, msg_debug, msg_error, msg_success
 
@@ -144,16 +144,18 @@ def main(args) -> None:
     # パイプラインの初期化と実行
     # ======================================================
 
-    # pipeline = SanitizePipeline(settings)
+    pipeline = SanitizePipeline(settings)
+
     dataloader = ListDataLoader(source_files, settings)
+
     for data, start_index, end_index in dataloader:
 
         print(msg_debug(f"batched files: {data=}, {start_index=}, {end_index=}"))
 
-        # results = pipeline.sanitize_batch(
-        #     data=data,
-        # )
-        # pipeline.save_results(results)
+        results = pipeline.sanitize_batch(
+            batched_data=data,
+        )
+        pipeline.save_results(results)
 
 
 

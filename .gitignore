@@ -1,5 +1,11 @@
+# Ignore files and directories
+
+# .venv
+.venv/
+
 # yamls
 yamls/ocr_settings.yaml
+yamls/sanitization_settings.yaml
 
 
 # test files
