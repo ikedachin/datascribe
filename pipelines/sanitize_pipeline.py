@@ -5,7 +5,7 @@ import glob
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-import tqdm
+# import tqdm
 from openai import OpenAI
 from concurrent.futures import ThreadPoolExecutor
 
@@ -68,6 +68,7 @@ class SanitizePipeline:
         self.batch_size = settings.get("batch_size", 4)
         self.max_retries = settings.get("max_retries", 3)
         self.wait_seconds = settings.get("wait_seconds", 5)
+        self.nothink = settings.get("nothink", False)
 
 
     def _load_prompts(self, prompts_settings: List[Dict]) -> Dict[str, str]:
@@ -105,6 +106,11 @@ class SanitizePipeline:
                     max_tokens=self.inference_config.get("max_tokens", 2048),
                     temperature=self.inference_config.get("temperature", 0),
                     top_p=self.inference_config.get("top_p", 1.0),
+                        extra_body={
+                        "chat_template_kwargs": {
+                            "enable_thinking": not self.nothink
+                        }
+                    }
                 )
                 return response.choices[0].message.content.strip()
             except Exception as e:
@@ -235,7 +241,7 @@ class SanitizePipeline:
         Raises:
             ValueError: jp_en_promptまたはen_jp_promptが設定されていない場合。
         """
-        print(msg_debug(batched_data))
+        # print(msg_debug(batched_data))
 
         # --------------------
         # プロンプトの取得
