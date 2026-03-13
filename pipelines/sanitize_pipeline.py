@@ -68,7 +68,7 @@ class SanitizePipeline:
         self.batch_size = settings.get("batch_size", 4)
         self.max_retries = settings.get("max_retries", 3)
         self.wait_seconds = settings.get("wait_seconds", 5)
-        self.nothink = settings.get("nothink", False)
+        self.nothink = settings.get("NOTHINK", False)
 
 
     def _load_prompts(self, prompts_settings: List[Dict]) -> Dict[str, str]:

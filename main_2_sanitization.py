@@ -150,7 +150,7 @@ def main(args) -> None:
 
     for data, start_index, end_index in dataloader:
 
-        print(msg_debug(f"batched files: {data=}, {start_index=}, {end_index=}"))
+        # print(msg_debug(f"batched files: {data=}, {start_index=}, {end_index=}"))
 
         results = pipeline.sanitize_batch(
             batched_data=data,
