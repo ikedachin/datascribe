@@ -4,15 +4,17 @@ import json
 import base64
 import uuid
 import ast
+import time
 from copy import deepcopy
 
 from pathlib import Path
 from openai import OpenAI
 from typing import Union, List, Dict
-# import cv2
 from PIL import Image
+
 import numpy as np
 import tqdm
+
 from io import BytesIO
 from concurrent.futures import ThreadPoolExecutor
 
@@ -43,19 +45,6 @@ class OcrPipeline:
             api_key=inference_config.get("API_KEY")
         )
         self.results = []
-        # キープする最終形態のデータ
-        # {
-        #     "id": None,
-        #     "page": None,
-        #     "ocr": "",
-        #     "objects_content": None,
-        #     "images": [],
-        #     "objects": [],
-        #     "table": [],
-        #     "figures": [],
-        #     "photos": [],
-        #     "generator": None,
-        # }
 
         self.output_path = Path(inference_config.get("output_path", "./outputs/")).expanduser().resolve()
         self.file_name = inference_config.get("file_name")
@@ -122,7 +111,9 @@ class OcrPipeline:
                     }
                 })
 
-        for attempt in range(self.inference_config.get("max_retry", 3)):
+        max_retries = int(self.inference_config.get("max_retries", self.inference_config.get("max_retry", 3)))
+        wait_seconds = float(self.inference_config.get("wait_seconds", 5))
+        for attempt in range(max_retries):
             try:
                 response = self.client.chat.completions.create(
                     model=self.inference_config.get("MODEL_NAME"),
@@ -140,8 +131,11 @@ class OcrPipeline:
 
             except Exception as e:
                 print(f"[WARNING] Inference attempt {attempt + 1} failed: {e}")
-                if attempt == self.inference_config.get("max_retry", 3) - 1:
+                if attempt == max_retries - 1:
                     raise msg_error(f"Failed to generate response: {e}")
+                if wait_seconds > 0:
+                    tqdm.tqdm.write(msg_info(f"Retrying in {wait_seconds} seconds..."))
+                    time.sleep(wait_seconds)
 
     def _pairing_images(self, batched_images: list) -> list[list]:
         """画像をペアリングします。"""
@@ -719,4 +713,3 @@ class OcrPipeline:
             with open(self.output_path / save_file_name, "a") as jsonl_file:
                 json_string = json.dumps(json_data2, ensure_ascii=False)
                 jsonl_file.write(json_string + "\n")
-

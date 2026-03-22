@@ -6,7 +6,8 @@
 # yamls
 yamls/ocr_settings.yaml
 yamls/sanitization_settings.yaml
-
+yamls/sanitization_settings_pgx.yaml
+yamls/create_qa_settings.yaml
 
 # test files
 /test_pdfs/aiplan_g_20251223.pdf

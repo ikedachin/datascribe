@@ -1,3 +1,0 @@
-{"book": "aaa_test", "page": 1, "original_text": "This is the content of the aaa_test book.", "sanitized_text": "This is the sanitized content of the aaa_test book.", "eval_score": 0.9, "similarity": 0.8}
-{"book": "aaa_test", "page": 2, "original_text": "This is the content of the aaa_test book.", "sanitized_text": "This is the sanitized content of the aaa_test book.", "eval_score": 0.9, "similarity": 0.8}
-{"book": "aaa_test", "page": 8, "original_text": "This is the content of the aaa_test book.", "sanitized_text": "This is the sanitized content of the aaa_test book.", "eval_score": 0.9, "similarity": 0.8}

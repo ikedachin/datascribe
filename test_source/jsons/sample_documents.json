@@ -1,0 +1,14 @@
+[
+  {
+    "book": "aaa_test",
+    "page": 3,
+    "original_text": "四月の午後、街路樹の若葉が水色の光を受けてきらめき、足早に通る人々の笑顔が心地よいリズムを刻んでいました。",
+    "source": "test_source/texts/aaa_test/aaa_0003.txt"
+  },
+  {
+    "book": "bbb_test",
+    "page": 1,
+    "original_text": "来客を迎えるホールには、翌週のイベント告知ポスターが並び、スタッフが手早くチェックリストを確認していました。",
+    "source": "test_source/texts/bbb_test/bbb_0001.txt"
+  }
+]

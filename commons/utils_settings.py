@@ -22,15 +22,15 @@ def get_inference_config(settings: dict) -> dict:
     MAX_TOKENS = inference_config.get("max_tokens", 2048)
     TEMPERATURE = inference_config.get("temperature", 0)
     TOP_P = inference_config.get("top_p", 1.0)
-    json_output_path = settings.get("json_output", "./outputs/json/result.json")
+    output_path = settings.get("output_path", "./outputs/json/result.json")
     # print(msg_debug(f"Loaded Inference Config: {inference_config}"))
     
-    if not Path(json_output_path).exists():
-        print(msg_info(f"Creating output directory: {Path(json_output_path).parent}"))
-        Path(json_output_path).mkdir(parents=True, exist_ok=True)
+    if not Path(output_path).exists():
+        print(msg_info(f"Creating output directory: {Path(output_path).parent}"))
+        Path(output_path).mkdir(parents=True, exist_ok=True)
     if settings.get("openrouter", False):
-        API_KEY = settings.get("openai_api_key", "dummy")
-        SERVER_URL = settings.get("oupenrouter_server_url", "https://openrouter.ai/api/v1")
+        API_KEY = settings.get("openrouter_api_key", "dummy")
+        SERVER_URL = settings.get("openrouter_server_url", "https://openrouter.ai/api/v1")
         MODEL_NAME = settings.get("openrouter_model_name", None)
         print(msg_debug("Using OpenRouter settings"))
     else:
@@ -43,7 +43,9 @@ def get_inference_config(settings: dict) -> dict:
         "API_KEY": API_KEY,
         "SERVER_URL": SERVER_URL,
         "MODEL_NAME": MODEL_NAME,
-        "output_path": settings.get("json_output", "./outputs/json/result.json"),
+        "output_path": output_path,
+        "max_retries": settings.get("max_retries", inference_config.get("max_retry", 3)),
+        "wait_seconds": settings.get("wait_seconds", 5),
     })
     print(msg_debug(f"Inference Config: {inference_config.keys()}"))
     return inference_config

@@ -1,0 +1,14 @@
+[
+  {
+    "book": "aaa_test",
+    "page": 4,
+    "original_text": "図書館前の広場で新入生歓迎イベントの準備が進み、ボランティアスタッフが受け渡し場所を再確認しています。",
+    "source": "test_source/texts/aaa_test/aaa_0004.txt"
+  },
+  {
+    "book": "bbb_test",
+    "page": 3,
+    "original_text": "会場の備品点検リストには、音響チェックと照明の配線確認が含まれていて、技術チームが細かく詰めています。",
+    "source": "test_source/texts/bbb_test/bbb_0003.txt"
+  }
+]

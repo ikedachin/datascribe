@@ -25,7 +25,7 @@ class SanitizePipeline:
             settings: パイプラインの設定を含む辞書。
                 以下のキーを含むことができます：
                 - openrouter: OpenRouterを使用するかどうか (bool)
-                - openai_api_key: APIキー (str)
+                - openrouter_api_key: APIキー (str)
                 - openrouter_server_url: サーバーURL (str)
                 - openrouter_model_name: モデル名 (str)
                 - SERVER_URL: ローカルサーバーURL (str)
@@ -36,7 +36,7 @@ class SanitizePipeline:
         """
         self.settings = settings
         if settings.get("openrouter", False):
-            api_key = settings.get("openai_api_key", "dummy")
+            api_key = settings.get("openrouter_api_key", "dummy")
             server_url = settings.get("openrouter_server_url", "https://openrouter.ai/api/v1")
             model_name = settings.get("openrouter_model_name", None)
             self.runtime_label = "openrouter"
@@ -58,8 +58,9 @@ class SanitizePipeline:
             base_url=self.inference_config.get("SERVER_URL"),
             api_key=self.inference_config.get("API_KEY"),
         )
+        output_path = settings.get("output_path") or "./json_output/qa"
         self.output_dir = (
-            Path(settings.get("output_path", "./json_output/qa"))
+            Path(output_path)
             .expanduser()
             .resolve()
         )
@@ -287,49 +288,32 @@ class SanitizePipeline:
             eval_points = self._infer_texts(eval_prompts)
             print(msg_debug(f"一致度評価結果: {eval_points[0]} points"))
 
+        generator_name = self.inference_config.get("MODEL_NAME") or "unknown"
+
         if eval_prompt:
             for i, (sanitized_text, mid_text, eval_point) in enumerate(zip(sanitized_texts, en_texts, eval_points)):
                 batched_data[i][f'eval_{target_key}'] = eval_point
                 batched_data[i][f'sanitized_{target_key}'] = sanitized_text
                 batched_data[i][f'similarity_{target_key}'] = self.tfidf_cosine_similarity(text_a=batched_data[i][target_key], text_b=sanitized_text)
-                batched_data[i][f'generator'] = self.settings.get("MODEL_NAME", "unknown")
+                batched_data[i][f'generator'] = generator_name
         else:
             for i, (sanitized_text, mid_text) in enumerate(zip(sanitized_texts, en_texts)):
                 batched_data[i][f'sanitized_{target_key}'] = sanitized_text
                 batched_data[i][f'similarity_{target_key}'] = self.tfidf_cosine_similarity(text_a=batched_data[i][target_key], text_b=sanitized_text)
-                batched_data[i][f'generator'] = self.settings.get("MODEL_NAME", "unknown")
-        self.save_results(batched_data)
-
+                batched_data[i][f'generator'] = generator_name
         # self._cache_sanitized(batched_data)
+        return batched_data
 
-    def save_results(self, batch_data: List[Dict]) -> None:
-        """処理結果をJSONL形式で保存します。        
+    def save_results(self, data: Dict) -> None:
+        """処理結果をJSONL形式で保存します（1件単位）。        
         Args:
-            batch_data: 保存する辞書のリスト。
+            data: 保存する辞書。
         """
-        if not batch_data:
+        if not data or "book" not in data:
             return
-        else:
-            for data in batch_data:
-                if "book" in data:
-                    result_path = self.output_dir / f"sanitized_{data['book']}.jsonl"
-                    with open(result_path, "a", encoding="utf-8") as f:
-                        for data in batch_data:
-                            json.dump(data, f, ensure_ascii=False)
-                            f.write("\n")
-
-    # def _cache_sanitized(self, batched_data, data_path_stem: str) -> None:
-    #     sanitized_list_path = self.output_dir / "sanitized.jsonl"
-    #     existing_stems = set()
-    #     if sanitized_list_path.exists():
-    #         with open(sanitized_list_path, "r", encoding="utf-8") as f:
-    #             for line in f:
-    #                 line = line.strip()
-    #                 if line:
-    #                     existing_stems.add(line)
-    #     if data_path_stem not in existing_stems:
-    #         with open(sanitized_list_path, "a", encoding="utf-8") as f:
-    #             f.write(str(data_path_stem) + "\n")
-
-
+        book = data["book"].split('.')[0]  # 拡張子を除去
+        result_path = self.output_dir / f"sanitized_{book}.jsonl"
+        with open(result_path, "a", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+            f.write("\n")
 
