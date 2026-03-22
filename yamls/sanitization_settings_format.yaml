@@ -2,8 +2,8 @@
 # OpenRouter settings
 # ------------------------------------
 openrouter: True
-openai_api_key: "<YOUR_OPENROUTER_API_KEY>"
-oupenrouter_server_url: "https://openrouter.ai/api/v1"
+openrouter_api_key: "<YOUR_OPENROUTER_API_KEY>"
+openrouter_server_url: "https://openrouter.ai/api/v1"
 openrouter_model_name: "qwen/qwen3-30b-a3b-thinking-2507"
 
 # ------------------------------------
@@ -32,7 +32,7 @@ prompts: # 処理の順に並べること
 # ------------------------------------
 # Output
 # ------------------------------------
-output_path: ./json_output/sanitization_test
+output_path: ./test_output/sanitization_test
 
 # ------------------------------------
 # Retry settings

@@ -1,0 +1,45 @@
+# ------------------------------------
+# OpenRouter settings
+# ------------------------------------
+openrouter: True
+inference_backend: "api_openai_comp"
+openrouter_api_key: "<YOUR_OPENROUTER_API_KEY>"
+openrouter_server_url: "https://openrouter.ai/api/v1"
+openrouter_model_name: "qwen/qwen3-30B-A3B-Instruct-2507"
+
+# ------------------------------------
+# Local server settings
+# ------------------------------------
+SERVER_URL: "http://localhost:8000/v1"
+MODEL_NAME: "Qwen3-30B-A3B-Instruct-2507"
+NOTHINK: True
+
+# ------------------------------------
+# Retry settings
+# ------------------------------------
+max_retries: 15
+wait_seconds: 10
+
+# ------------------------------------
+# Inference config
+# ------------------------------------
+infer_config:
+  max_tokens: 8192
+  temperature: 0
+  top_p: 1.0
+batch_size: 16
+
+# ------------------------------------
+# Prompts
+# ------------------------------------
+prompts:
+  - question_prompt: ./prompts/create_qa/qa_create_question.txt
+  - thinking_prompt: ./prompts/create_qa/qa_create_thinking.txt
+  - answer_prompt: ./prompts/create_qa/qa_create_answer.txt
+  - refine_thinking_prompt: ./prompts/create_qa/qa_refine_thinking.txt
+  - refine_answer_prompt: ./prompts/create_qa/qa_refine_answer.txt
+  
+# ------------------------------------
+# Output
+# ------------------------------------
+output_path: ./test_output/test_qa/
