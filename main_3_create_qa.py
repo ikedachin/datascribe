@@ -23,6 +23,13 @@ def collect_source_files(source_path: Path) -> Tuple[List[Path], List[Path]]:
         for candidate in sorted(source_path.rglob("*")):
             if not candidate.is_file():
                 continue
+            # 前工程(async版)の中間ファイル・失敗ログ・status台帳は入力から除外する
+            if (
+                candidate.name.endswith("_tmp.jsonl")
+                or candidate.name.endswith(".failures.jsonl")
+                or candidate.name.endswith(".status.jsonl")
+            ):
+                continue
             suffix = candidate.suffix.lower()
             if suffix in TEXT_EXTENSIONS:
                 text_files.append(candidate)

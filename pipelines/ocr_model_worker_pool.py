@@ -1,136 +1,223 @@
-# Under Constructions
-
-import asyncio
-import json
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List
 
-NUM_STEPS = 5
-worker_count = 5
+import tqdm
+
+from commons.utils_msg import msg_debug, msg_error, msg_info
+from pipelines.async_httpx_client import append_jsonl
+from pipelines.async_worker_pool import run_item_worker_pool
+
+
+OCR_STEP = 1
+OBJECTS_STEP = 2
+OBJECT_CONTENT_STEP = 3
+SAVE_STEP = 4
+DONE_STEP = 5
+
+STEP_NAMES = {
+    OCR_STEP: "ocr",
+    OBJECTS_STEP: "objects_bbox",
+    OBJECT_CONTENT_STEP: "object_content",
+    SAVE_STEP: "save",
+    DONE_STEP: "done",
+}
+
 
 @dataclass
 class PipelineJob:
-    book: int
+    item_id: str
+    file_name: str
+    book_name: str
+    image_path: Path
+    pair_images: List[Path]
+    prompt_dict: Dict[str, str]
     step: int
-    ocr_text: str
-    objects_bbox: List[List, Any]
-    object_content: str
-    ocr_generator: str
-    output_text: str
-    item_id: Any
-    payload: Dict[str, Any]
     previous_outputs: Dict[str, Any] = field(default_factory=dict)
 
-#   - `book`, `page`
-#   - `text`（OCR結果）
-#   - `objects_bbox`
-#   - `object_content`
-#   - `duplicate_check`
-#   - `ocr_generator`
 
-async def run_one_step(job: PipelineJob, worker_id):
-    """
-    job.stepによって実行する処理を変える関数
-    長くなるので概念だけ
-    """
-    output = dict(job.previous_outputs)
-    
-    if job.step == 1:
-        # OCR
-        print(f"Worker {worker_id} processing {job.item_id} step 1 OCR") 
-        response = "ocr result from vlm"
-        output["ocr"] = response
-    elif job.step == 2:
-        # 図、グラフ、表の抽出
-        print(f"Worker {worker_id} processing {job.item_id} step 2 Munipurate Graphs,Tables,Pictures")
-        pass
-    elif job.step == 3:
-        print(f"Worker {worker_id} processing {job.item_id} step 3 Understanding Graphs,Tables,Pictures")
-        # 図、グラフの、表の理解
-        pass
-    elif job.step == 4:
-        # OCRと図、グラフの内容の結合
-        print(f"Worker {worker_id} processing {job.item_id} step 4 Merge infomations to OCR result")
-        pass
-    elif job.step == 5:
-        # 整合性評価
-        pass
-    else:
-        # 例外処理
-        pass
+def build_ocr_jobs(
+    *,
+    pipeline: Any,
+    file_name: str,
+    book_name: str,
+    image_files: List[Path],
+    prompt_dict: Dict[str, str],
+) -> List[PipelineJob]:
+    processed = pipeline.load_processed_keys(file_name)
+    jobs: List[PipelineJob] = []
+    for image_path in image_files:
+        page = pipeline.extract_page_num(image_path)
+        key = pipeline.item_key(book_name, page)
+        if key in processed:
+            continue
+        jobs.append(
+            PipelineJob(
+                item_id=key,
+                file_name=file_name,
+                book_name=book_name,
+                image_path=image_path,
+                pair_images=[image_path],
+                prompt_dict=prompt_dict,
+                step=OCR_STEP,
+            )
+        )
+    return jobs
 
+
+async def run_ocr_pdf_worker_pool(
+    *,
+    pipeline: Any,
+    file_name: str,
+    book_name: str,
+    image_files: List[Path],
+    prompt_dict: Dict[str, str],
+) -> List[Dict[str, Any]]:
+    jobs = build_ocr_jobs(
+        pipeline=pipeline,
+        file_name=file_name,
+        book_name=book_name,
+        image_files=image_files,
+        prompt_dict=prompt_dict,
+    )
+    if not jobs:
+        return []
+
+    saved: List[Dict[str, Any]] = []
+    worker_count = min(pipeline.max_in_flight, len(jobs))
+
+    async def process_job(job: PipelineJob, worker_id: int) -> None:
+        del worker_id
+        curr = job
+        failed_job = job
+        try:
+            while curr.step < DONE_STEP:
+                failed_job = curr
+                curr = await run_one_step(pipeline, curr)
+            async with pipeline.write_lock:
+                append_jsonl(pipeline.output_jsonl(file_name), curr.previous_outputs)
+                saved.append(curr.previous_outputs)
+        except Exception as exc:
+            print_step_error(pipeline, failed_job, exc)
+            async with pipeline.write_lock:
+                append_jsonl(
+                    pipeline.failure_jsonl(file_name),
+                    {
+                        "stage": "ocr",
+                        "failed_step": step_name(failed_job.step),
+                        "error": str(exc),
+                        "source": str(failed_job.image_path),
+                        "book": book_name,
+                        "page": pipeline.extract_page_num(failed_job.image_path),
+                    },
+                )
+
+    await run_item_worker_pool(
+        jobs,
+        worker_count=worker_count,
+        process_item=process_job,
+        progress_desc=msg_info(f"OCR pages [{file_name}]"),
+    )
+    return saved
+
+
+async def run_one_step(pipeline: Any, job: PipelineJob) -> PipelineJob:
+    outputs = dict(job.previous_outputs)
+
+    if job.step == OCR_STEP:
+        ocr_prompt = job.prompt_dict.get("ocr_prompt")
+        if not ocr_prompt:
+            raise ValueError("ocr_prompt is not defined.")
+        text = await pipeline.infer(ocr_prompt, job.pair_images)
+        print_step_result(pipeline, job, "text", text)
+        outputs.update(
+            {
+                "page": pipeline.extract_page_num(job.image_path),
+                "book": job.book_name,
+                "ocr_generator": pipeline.inference_config.get("MODEL_NAME", ""),
+                "text": text,
+            }
+        )
+        return replace_step(job, OBJECTS_STEP, outputs)
+
+    if job.step == OBJECTS_STEP:
+        objects_prompt = job.prompt_dict.get("objects_prompt")
+        if objects_prompt:
+            outputs["objects_bbox"] = await pipeline.infer(
+                objects_prompt,
+                job.pair_images,
+                previous_text=outputs["text"],
+            )
+        else:
+            outputs["objects_bbox"] = "[]"
+        print_step_result(pipeline, job, "objects_bbox", outputs["objects_bbox"])
+        return replace_step(job, OBJECT_CONTENT_STEP, outputs)
+
+    if job.step == OBJECT_CONTENT_STEP:
+        content_prompt = job.prompt_dict.get("content_understanding_prompt")
+        if content_prompt:
+            outputs["object_content"] = await pipeline.object_understanding(
+                content_prompt,
+                job.pair_images,
+                outputs.get("objects_bbox"),
+                outputs["text"],
+            )
+        else:
+            outputs["object_content"] = []
+        print_step_result(pipeline, job, "object_content", outputs["object_content"])
+        return replace_step(job, SAVE_STEP, outputs)
+
+    if job.step == SAVE_STEP:
+        outputs["final_output"] = outputs["text"]
+        return replace_step(job, DONE_STEP, outputs)
+
+    raise ValueError(f"Unknown OCR pipeline step: {job.step}")
+
+
+def replace_step(job: PipelineJob, step: int, outputs: Dict[str, Any]) -> PipelineJob:
     return PipelineJob(
         item_id=job.item_id,
-        step=job.step + 1, # ここで、ステップが更新される
-        payload=job.payload,
-        previous_outputs=output,
+        file_name=job.file_name,
+        book_name=job.book_name,
+        image_path=job.image_path,
+        pair_images=job.pair_images,
+        prompt_dict=job.prompt_dict,
+        step=step,
+        previous_outputs=outputs,
     )
 
-async def create_qa_item_pool(texts: List[str]) -> List[Dict[str, Any]]:
-    queue = asyncio.Queue(maxsize=worker_count * 2) # 読み込むキュー（シードデータ）の数を指定（メモリを抑えるため）
 
-    async def item_processer(worker_id):
-        while True:
-            job = await queue.get() # queueに保存したジョブを取り出して実行
-    
-            # ジョブが無くなったら終了処理
-            if job is None:
-                queue.task_done()
-                return
-            try:
-                curr = job
-                # 同じワーカーがそのアイテムを最後まで処理する
-                while curr.step <= NUM_STEPS:
-                    curr = await run_one_step(curr, worker_id)
-                # curr.step == NUM_STEPS + 1、outputs は最終結果を含む
-                results[curr.item_id] = curr.previous_outputs
-            except Exception as exc:
-                print(f"Worker {worker_id} failed item {job.item_id}: {exc}")
-            finally:
-                queue.task_done()
-            
-    # item_processerを実行可能なワーカーを作る
-    workers = [asyncio.create_task(item_processer(i)) for i in range(worker_count)]
+def step_name(step: int) -> str:
+    return STEP_NAMES.get(step, f"unknown_step_{step}")
 
-    def build_initial(item_id: int) -> PipelineJob:
-        return PipelineJob(item_id=item_id, step=1, payload={"text": texts[item_id]})
 
-    # キューにシードデータを渡す。maxsizeを超えた分は読み込まれない
-    total = len(texts)
-    for i in range(total):
-        await queue.put(build_initial(i))
+def print_step_result(pipeline: Any, job: PipelineJob, output_key: str, value: Any) -> None:
+    if not bool(pipeline.settings.get("print_step_outputs", True)):
+        return
+    page = pipeline.extract_page_num(job.image_path)
+    images = ", ".join(str(path) for path in job.pair_images)
+    tqdm.tqdm.write(msg_debug(f"OCR step result: book={job.book_name} page={page} step={step_name(job.step)} key={output_key}"))
+    tqdm.tqdm.write(msg_debug(f"OCR step images: {images}"))
+    tqdm.tqdm.write(format_step_value(value, max_chars=int(pipeline.settings.get("print_step_output_max_chars", 4000))))
 
-    # 実行完了まで待つ
-    await queue.join()
 
-    # すべて完了したら、queueにNoneを加え、すべてのworkerを終了させる
-    for _ in workers:
-        await queue.put(None)
-    await asyncio.gather(*workers)
+def print_step_error(pipeline: Any, job: PipelineJob, exc: Exception) -> None:
+    if not bool(pipeline.settings.get("print_step_outputs", True)):
+        return
+    page = pipeline.extract_page_num(job.image_path)
+    tqdm.tqdm.write(
+        msg_error(
+            f"OCR step failed: book={job.book_name} page={page} "
+            f"step={step_name(job.step)} error={exc}"
+        )
+    )
 
-    # return results in input order
-    return [results.get(i, {}) for i in range(total)]
 
-if __name__ == "__main__":
-    # シードデータのイメージ
-    texts = [
-        "テキスト1",
-        "テキスト2",
-        "テキスト3",
-        "テキスト4",
-        "テキスト5",
-        "テキスト6",
-        "テキスト7",
-        "テキスト8",
-        "テキスト9",
-        "テキスト10",
-        "テキスト11",
-        "テキスト12",
-        "テキスト13",
-        "テキスト14",
-        "テキスト15"
-    ]
-
-    # 実行
-    results = asyncio.run(create_qa_item_pool(texts))
-    print(json.dumps(results, ensure_ascii=False, indent=2))
+def format_step_value(value: Any, *, max_chars: int) -> str:
+    if isinstance(value, str):
+        text = value
+    else:
+        text = repr(value)
+    if max_chars > 0 and len(text) > max_chars:
+        return f"{text[:max_chars]}\n... <truncated {len(text) - max_chars} chars>"
+    return text

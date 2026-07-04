@@ -27,6 +27,24 @@ infer_config:
   max_tokens: 4096
 batch_size: 4
 
+# Async worker pool settings
+# max_in_flight is the global maximum number of external API requests in flight.
+# If omitted, async entrypoints use batch_size as the default.
+max_in_flight: 4
+max_connections: 4
+max_keepalive_connections: 4
+connect_timeout: 10
+read_timeout: 120
+write_timeout: 120
+pool_timeout: 30
+http2: false
+
+# OCR debug output settings
+# print_step_outputs prints each async OCR worker-pool step result to stdout.
+# Set print_step_output_max_chars to 0 to print full responses.
+print_step_outputs: true
+print_step_output_max_chars: 4000
+
 # ------------------------------------
 # Retry settings
 # ------------------------------------

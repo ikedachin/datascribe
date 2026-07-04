@@ -36,6 +36,14 @@ pip install -r requirements.txt
 2. `main_2_sanitization.py`: JSON/JSONL -> サニタイズ済み JSONL
 3. `main_3_create_qa.py`: テキスト/JSON/JSONL -> Q&A JSONL
 
+非同期 worker pool 版を使う場合は、対応する async 入口を使います。
+
+1. `main_1_ocr_async_pool.py`: PDF -> JSONL（OCR結果）
+2. `main_2_sanitization_async_pool.py`: JSON/JSONL -> サニタイズ済み JSONL
+3. `main_3_create_qa_async_pool.py`: テキスト/JSON/JSONL -> Q&A JSONL
+
+Async 版では YAML の `max_in_flight` がプログラム全体の同時APIリクエスト上限です。失敗した item は `*.failures.jsonl` に保存され、OCR / Sanitization は既存出力の `book` / `page`、Q&A は `*.status.jsonl` で再実行時のskipを行います。
+
 `test_source` には各段階で試せる入力が入っています。
 - OCR入力（PDF）: `test_source/pdfs/`
 - サニタイズ入力（JSON/JSONL）: `test_source/jsons/`, `test_source/jsonls/`

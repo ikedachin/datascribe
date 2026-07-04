@@ -16,6 +16,13 @@ python main_2_sanitization.py \
   -p ./yamls/sanitization_settings_format.yaml
 ```
 
+Async worker pool 版:
+```bash
+python main_2_sanitization_async_pool.py \
+  -s ./test_output/ocr \
+  -p ./yamls/sanitization_settings_format.yaml
+```
+
 ### 2) `test_source` の既存 JSONL から開始する
 ```bash
 python main_2_sanitization.py \
@@ -41,6 +48,12 @@ python main_2_sanitization.py \
 ## 出力形式
 - 出力先: `output_path`
 - ファイル名: `sanitized_<book>.jsonl`
+- Async worker pool 版のファイル配置:
+  - 最終出力: `output_path` 直下の `sanitized_<book>.jsonl`（常に page 順。tmp から毎回ソートして再生成）
+  - 中間出力（完了順の追記。resume 台帳）: `output_path`/`tmp`/`sanitized_<book>_tmp.jsonl`
+  - 失敗ログ: `output_path`/`tmp`/`sanitized_<book>.failures.jsonl`
+  - 再実行時の skip は tmp の `book` / `page` で判定し、失敗 item は自動で再処理されます。
+  - 入力ディレクトリ走査では `*_tmp.jsonl` と `*.failures.jsonl` を自動除外します（OCR の tmp を誤って読まないため）。
 - 各行の主なキー:
   - `book`, `page`, `original_text`
   - `sanitized_<target_key>`
@@ -62,11 +75,19 @@ python main_2_sanitization.py \
   - OpenRouter: `openrouter`, `openrouter_api_key`, `openrouter_server_url`, `openrouter_model_name`
   - ローカル: `SERVER_URL`, `MODEL_NAME`
 - 推論設定: `infer_config`, `batch_size`, `max_retries`, `wait_seconds`
+- Async 版: `max_in_flight`, `max_connections`, `max_keepalive_connections`, `connect_timeout`, `read_timeout`, `write_timeout`, `pool_timeout`, `http2`
 - プロンプト（順序付き）:
   - `jp_en_prompt`, `en_jp_prompt`, `refine_prompt`, `eval_prompt`
 - 出力先: `output_path`
 
 `-t/--target_key` を指定すると、そのキー名に対して `sanitized_<target_key>` を生成します。
+
+## Async worker pool 版
+`main_2_sanitization_async_pool.py` は item 単位で `sanitize_one()` を実行し、保存と失敗記録を worker pool 側で処理します。出力 schema は同期版と互換です。
+
+- `max_in_flight`: プログラム全体で同時に外部APIへ投げる最大リクエスト数
+- 再実行時のskip: 既存 `sanitized_*.jsonl` の `book` / `page`
+- 失敗記録: `sanitized_<book>.failures.jsonl`
 
 ## 次工程への接続
 生成された `sanitized_*.jsonl` は `main_3_create_qa.py` で利用できます。
@@ -77,3 +98,5 @@ python main_3_create_qa.py \
   -t sanitized_original_text \
   -p ./yamls/create_qa_settings.yaml
 ```
+
+Async worker pool 版の出力も同じ schema なので、`main_3_create_qa.py` または `main_3_create_qa_async_pool.py` の入力にできます。

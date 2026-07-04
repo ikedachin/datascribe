@@ -18,6 +18,13 @@ python main_3_create_qa.py \
   -p ./yamls/create_qa_settings.yaml
 ```
 
+Async worker pool 版:
+```bash
+python main_3_create_qa_async_pool.py \
+  -s ./test_source/mds \
+  -p ./yamls/create_qa_settings.yaml
+```
+
 ### JSON/JSONL入力
 ```bash
 python main_3_create_qa.py \
@@ -54,11 +61,12 @@ python main_3_create_qa.py \
 - テキスト入力時: 親ディレクトリ名単位で `<parent>.jsonl` を作成
   - 例: `test_source/mds/aaa_test/*.md` -> `aaa_test.jsonl`
 - JSON入力時: `<入力ファイルstem>.jsonl` を作成
+- Async worker pool 版では、resume 用に `tmp/<出力stem>.status.jsonl`、失敗記録用に `tmp/<出力stem>.failures.jsonl` を併用します（`output_path`/`tmp`/ 配下。main_1 / main_2 と同じ配置）。
 
 各行の主なキー:
 - `question`, `thinking`, `answer`
 - `refined_thinking`, `refined_answer`
-- `qa_generator`, `source_files`, `id`
+- `qa_generator`, `generator`, `source_files`, `id`
 
 ## サンプル構成
 - 入力サンプル:
@@ -77,7 +85,15 @@ python main_3_create_qa.py \
   - OpenRouter: `openrouter`, `openrouter_api_key`, `openrouter_server_url`, `openrouter_model_name`
   - ローカル: `SERVER_URL`, `MODEL_NAME`, `NOTHINK`
 - 推論設定: `infer_config`, `batch_size`, `max_retries`, `wait_seconds`
+- Async 版: `max_in_flight`, `max_connections`, `max_keepalive_connections`, `connect_timeout`, `read_timeout`, `write_timeout`, `pool_timeout`, `http2`
 - プロンプト:
   - `question_prompt`, `thinking_prompt`, `answer_prompt`
   - `refine_thinking_prompt`, `refine_answer_prompt`
 - 出力先: `output_path`
+
+## Async worker pool 版
+`main_3_create_qa_async_pool.py` は item 単位で `create_qa_one()` を実行し、出力 JSONL の schema は同期版と互換にします。完了済み source は `*.status.jsonl` に保存して、再実行時にskipします。
+
+- `max_in_flight`: プログラム全体で同時に外部APIへ投げる最大リクエスト数
+- 再実行時のskip: `tmp/*.status.jsonl` の `source_key` と既存出力の `source_files`
+- 失敗記録: `tmp/<出力stem>.failures.jsonl`

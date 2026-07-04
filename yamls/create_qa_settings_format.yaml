@@ -29,6 +29,18 @@ infer_config:
   top_p: 1.0
 batch_size: 16
 
+# Async worker pool settings
+# max_in_flight is the global maximum number of external API requests in flight.
+# It is separate from batch_size; if omitted, async entrypoints use batch_size.
+max_in_flight: 16
+max_connections: 16
+max_keepalive_connections: 16
+connect_timeout: 10
+read_timeout: 120
+write_timeout: 120
+pool_timeout: 30
+http2: false
+
 # ------------------------------------
 # Prompts
 # ------------------------------------

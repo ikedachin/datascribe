@@ -155,6 +155,10 @@ def main(args) -> None:
             source_files = []
             for file in source_path.glob("**/*"):
                 if file.is_file():
+                    # OCR async版の中間ファイル・失敗ログは入力から除外する
+                    if file.name.endswith("_tmp.jsonl") or file.name.endswith(".failures.jsonl"):
+                        print(msg_debug(f"File excluded (intermediate/failures): {file}"))
+                        continue
                     if args.extensions:
                         if file.suffix in settings['extensions']:
                             source_files.append(file)
