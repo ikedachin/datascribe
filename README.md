@@ -160,3 +160,11 @@ python main_3_create_qa_async_pool.py \
 - `docs/README_main_1_ocr.md`
 - `docs/README_main_2_sanitization.md`
 - `docs/README_main_3_create_qa.md`
+
+## ライセンス
+
+このプロジェクトは [Apache License 2.0](./LICENSE) の下で公開されています。
+
+Copyright 2026 ikedachin
+
+商用利用・改変・再配布・特許利用が可能です。再配布時はライセンス文の同梱と変更点の明示が必要です。詳細は `LICENSE` ファイルを参照してください。
