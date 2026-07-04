@@ -61,13 +61,13 @@ wait_seconds: 5
 # ------------------------------------
 # object detection prompt
 prompts:
-  - ocr_prompt: ./prompts/ocr/ocr.txt
+  - ocr_prompt: ./prompts/ocr/ocr_single_page.txt
+  - weave_prompt: ./prompts/ocr/ocr_weave.txt
   - objects_prompt: ./prompts/ocr/ocr_objects.txt
   - content_understanding_prompt: ./prompts/ocr/ocr_contents.txt
   - figure_understanding_prompt: ./prompts/ocr/ocr_figure.txt
   - table_understanding_prompt: ./prompts/ocr/ocr_table.txt
   - photo_understanding_prompt: ./prompts/ocr/ocr_photo.txt
-  - duplicate_check_prompt: ./prompts/ocr/ocr_duplicate_check.txt
 
 
 

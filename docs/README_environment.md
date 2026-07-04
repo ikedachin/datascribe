@@ -32,9 +32,9 @@ pip install -r requirements.txt
 ## 3.1 実行フロー（main_1 -> main_3）
 通常は次の順番で実行します。
 
-1. `main_1_ocr.py`: PDF -> JSONL（OCR結果）
-2. `main_2_sanitization.py`: JSON/JSONL -> サニタイズ済み JSONL
-3. `main_3_create_qa.py`: テキスト/JSON/JSONL -> Q&A JSONL
+1. `main_1_ocr_async_pool.py`: PDF -> JSONL（OCR結果）
+2. `main_2_sanitization_async_pool.py`: JSON/JSONL -> サニタイズ済み JSONL
+3. `main_3_create_qa_async_pool.py`: テキスト/JSON/JSONL -> Q&A JSONL
 
 非同期 worker pool 版を使う場合は、対応する async 入口を使います。
 
@@ -49,7 +49,7 @@ Async 版では YAML の `max_in_flight` がプログラム全体の同時APIリ
 - サニタイズ入力（JSON/JSONL）: `test_source/jsons/`, `test_source/jsonls/`
 - Q&A入力（テキスト/Markdown）: `test_source/texts/`, `test_source/mds/`
 
-既にテキスト化・JSON化されたデータがある場合は、`main_2_sanitization.py` から開始できます。
+既にテキスト化・JSON化されたデータがある場合は、`main_2_sanitization_async_pool.py` から開始できます。
 
 ## 4. APIキーの設定
 このリポジトリは各 YAML 内のキーを直接読みます。用途に合わせて以下を設定してください。
@@ -58,7 +58,7 @@ Async 版では YAML の `max_in_flight` がプログラム全体の同時APIリ
 
 ## 5. 動作確認の例
 ```bash
-python main_2_sanitization.py \
+python main_2_sanitization_async_pool.py \
   -s ./test_source/jsonls/sample_sanitized.jsonl \
   -t original_text \
   -p ./yamls/sanitization_settings_format.yaml

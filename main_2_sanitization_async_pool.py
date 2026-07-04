@@ -1,12 +1,63 @@
 import argparse
 import asyncio
+import json
 from pathlib import Path
 
 import yaml
 
 from commons.utils_msg import msg_debug, msg_error, msg_success
-from main_2_sanitization import load_files
 from pipelines.sanitize_pipeline_async_pool import AsyncSanitizePipeline
+
+
+def _load_json_entries(file_path: Path) -> list[dict]:
+    with open(file_path, "r", encoding="utf-8") as f:
+        raw = json.load(f)
+    entries = raw if isinstance(raw, list) else [raw]
+    return [entry for entry in entries if isinstance(entry, dict)]
+
+
+def _load_jsonl_entries(file_path: Path) -> list[dict]:
+    entries = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(entry, dict):
+                entries.append(entry)
+    return entries
+
+
+def load_files(source_files: list[Path]) -> list[dict]:
+    loaded_files = []
+    for file_path in sorted(source_files):
+        print(msg_debug(file_path))
+        suffix = file_path.suffix.lower()
+        if suffix not in {".json", ".jsonl"}:
+            continue
+        if suffix == ".json":
+            entries = _load_json_entries(file_path)
+        else:
+            entries = _load_jsonl_entries(file_path)
+        for entry in entries:
+            text = entry.get("original_text") or entry.get("text") or entry.get("content")
+            if not text:
+                continue
+            book = entry.get("book") or file_path.stem
+            page = entry.get("page")
+            extras = {k: v for k, v in entry.items() if k not in {"book", "page", "original_text"}}
+            record = {
+                "book": book,
+                "page": page,
+                "original_text": text,
+                **extras,
+            }
+            loaded_files.append(record)
+    return loaded_files
 
 
 def collect_source_files(source: str | None, extensions: str | None) -> list[Path]:

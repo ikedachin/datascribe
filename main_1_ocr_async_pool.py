@@ -6,10 +6,9 @@ from pathlib import Path
 import tqdm
 
 from commons.utils_msg import msg_error, msg_info, msg_success
-from commons.utils_pdf import convert_pdf_to_images
+from commons.utils_pdf import cleanup_output_images, convert_pdf_to_images, list_pdf_files
 from commons.utils_read_prompt import get_prompts
 from commons.utils_settings import get_inference_config, load_settings
-from main_1_ocr import cleanup_output_images, list_pdf_files
 from pipelines.ocr_model_async_pool import AsyncOcrPipeline
 
 DEFAULT_DPI = 200

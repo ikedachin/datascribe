@@ -3,12 +3,82 @@ import asyncio
 import json
 import sys
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from commons.util_settings import load_settings
 from commons.utils_msg import msg_debug, msg_error, msg_success
-from main_3_create_qa import collect_source_files, get_parent_book_name, load_json_entries
 from pipelines.create_qa_model_async_pool import AsyncQAPipeline
+
+TEXT_EXTENSIONS = {".md", ".txt"}
+JSON_EXTENSIONS = {".json", ".jsonl"}
+
+
+def collect_source_files(source_path: Path) -> Tuple[List[Path], List[Path]]:
+    text_files: List[Path] = []
+    json_files: List[Path] = []
+
+    if source_path.is_dir():
+        for candidate in sorted(source_path.rglob("*")):
+            if not candidate.is_file():
+                continue
+            # 前工程(async版)の中間ファイル・失敗ログ・status台帳は入力から除外する
+            if (
+                candidate.name.endswith("_tmp.jsonl")
+                or candidate.name.endswith(".failures.jsonl")
+                or candidate.name.endswith(".status.jsonl")
+            ):
+                continue
+            suffix = candidate.suffix.lower()
+            if suffix in TEXT_EXTENSIONS:
+                text_files.append(candidate)
+            elif suffix in JSON_EXTENSIONS:
+                json_files.append(candidate)
+        return text_files, json_files
+
+    if source_path.is_file():
+        suffix = source_path.suffix.lower()
+        if suffix in TEXT_EXTENSIONS:
+            return [source_path], []
+        if suffix in JSON_EXTENSIONS:
+            return [], [source_path]
+        print(msg_error(f"Unsupported file type: {suffix} for {source_path}"))
+        return [], []
+
+    print(msg_error(f"Source path not found: {source_path}"))
+    return [], []
+
+
+def get_parent_book_name(file_path: Path) -> str:
+    name = file_path.parent.name
+    return name if name else file_path.stem
+
+
+def load_json_entries(file_path: Path) -> List[dict]:
+    entries: List[dict] = []
+    suffix = file_path.suffix.lower()
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            if suffix == ".json":
+                raw = json.load(f)
+                if isinstance(raw, list):
+                    entries = [entry for entry in raw if isinstance(entry, dict)]
+                elif isinstance(raw, dict):
+                    entries = [raw]
+            elif suffix == ".jsonl":
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        obj = json.loads(line)
+                    except json.JSONDecodeError:
+                        print(msg_debug(f"Skipping invalid JSONL row in {file_path.name}: {line[:40]}"))
+                        continue
+                    if isinstance(obj, dict):
+                        entries.append(obj)
+    except Exception as exc:
+        print(msg_error(f"Failed to load {file_path}: {exc}"))
+    return entries
 
 
 def build_text_jobs(pipeline: AsyncQAPipeline, text_files: List[Path], start_index: int) -> List[Dict[str, Any]]:

@@ -57,3 +57,35 @@ if __name__ == "__main__":
     pdf_file = Path("./test_pdfs/aiplan_g_20251223.pdf")
     output_directory = Path("./imgs/")
     convert_pdf_to_images(pdf_file, output_directory, dpi=200)
+
+
+def list_pdf_files(pdfs_path) -> list[Path]:
+    """単一PDFまたはディレクトリ直下の *.pdf を列挙する。"""
+    if pdfs_path is None:
+        return []
+    pdfs_path = Path(pdfs_path)
+    if pdfs_path.is_dir():
+        return sorted(pdfs_path.glob("*.pdf"))
+    if pdfs_path.is_file() and pdfs_path.suffix.lower() == ".pdf":
+        return [pdfs_path]
+    return []
+
+
+def cleanup_output_images(output_dir) -> None:
+    """output_dir 配下の画像ファイルを削除する。"""
+    output_path = Path(output_dir)
+    if not output_path.exists() or not output_path.is_dir():
+        return
+
+    image_suffixes = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"}
+    deleted_count = 0
+
+    for file_path in output_path.rglob("*"):
+        if file_path.is_file() and file_path.suffix.lower() in image_suffixes:
+            try:
+                file_path.unlink()
+                deleted_count += 1
+            except Exception as e:
+                tqdm.tqdm.write(msg_error(f"Failed to delete image file: {file_path} ({e})"))
+
+    tqdm.tqdm.write(msg_info(f"Cleaned up {deleted_count} image file(s) in {output_path}"))

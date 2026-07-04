@@ -1,8 +1,8 @@
-# main_2_sanitization.py
+# main_2_sanitization_async_pool.py
 
 ## 概要
 入力テキストを翻訳ベースでサニタイズし、評価値と類似度を付与して JSONL へ保存します。
-`main_1_ocr.py` の出力 JSONL、または既にテキスト化済みの JSON/JSONL を入力できます。
+`main_1_ocr_async_pool.py` の出力 JSONL、または既にテキスト化済みの JSON/JSONL を入力できます。
 
 ## 実行パターン
 1. 通常フロー（`main_1` の出力を受ける）
@@ -11,21 +11,15 @@
 ## 実行例
 ### 1) `main_1` 出力を入力する
 ```bash
-python main_2_sanitization.py \
-  -s ./test_output/ocr \
-  -p ./yamls/sanitization_settings_format.yaml
-```
-
-Async worker pool 版:
-```bash
 python main_2_sanitization_async_pool.py \
   -s ./test_output/ocr \
+  -t final_output \
   -p ./yamls/sanitization_settings_format.yaml
 ```
 
 ### 2) `test_source` の既存 JSONL から開始する
 ```bash
-python main_2_sanitization.py \
+python main_2_sanitization_async_pool.py \
   -s ./test_source/jsonls/sample_sanitized.jsonl \
   -t original_text \
   -p ./yamls/sanitization_settings_format.yaml
@@ -82,21 +76,20 @@ python main_2_sanitization.py \
 
 `-t/--target_key` を指定すると、そのキー名に対して `sanitized_<target_key>` を生成します。
 
-## Async worker pool 版
-`main_2_sanitization_async_pool.py` は item 単位で `sanitize_one()` を実行し、保存と失敗記録を worker pool 側で処理します。出力 schema は同期版と互換です。
+## 処理の構成
+`main_2_sanitization_async_pool.py` は item 単位で `sanitize_one()` を実行し、保存と失敗記録を worker pool 側で処理します。
 
 - `max_in_flight`: プログラム全体で同時に外部APIへ投げる最大リクエスト数
-- 再実行時のskip: 既存 `sanitized_*.jsonl` の `book` / `page`
-- 失敗記録: `sanitized_<book>.failures.jsonl`
+- 再実行時のskip: `tmp/sanitized_*_tmp.jsonl` の `book` / `page`
+- 失敗記録: `tmp/sanitized_<book>.failures.jsonl`
 
 ## 次工程への接続
-生成された `sanitized_*.jsonl` は `main_3_create_qa.py` で利用できます。
+生成された `sanitized_*.jsonl` は `main_3_create_qa_async_pool.py` で利用できます。
 
 ```bash
-python main_3_create_qa.py \
+python main_3_create_qa_async_pool.py \
   -s ./test_output/sanitization_test \
   -t sanitized_original_text \
   -p ./yamls/create_qa_settings.yaml
 ```
 
-Async worker pool 版の出力も同じ schema なので、`main_3_create_qa.py` または `main_3_create_qa_async_pool.py` の入力にできます。

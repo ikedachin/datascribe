@@ -1,8 +1,8 @@
-# main_3_create_qa.py
+# main_3_create_qa_async_pool.py
 
 ## 概要
 テキスト/Markdown または JSON/JSONL を入力に、Q&A を生成して JSONL に保存します。
-`main_2_sanitization.py` の出力（`sanitized_*.jsonl`）も直接入力できます。
+`main_2_sanitization_async_pool.py` の出力（`sanitized_*.jsonl`）も直接入力できます。
 
 ## 実行パターン
 1. テキスト・Markdown から生成（`test_source/texts`, `test_source/mds`）
@@ -13,13 +13,6 @@
 
 ### テキスト・Markdown入力
 ```bash
-python main_3_create_qa.py \
-  -s ./test_source/mds \
-  -p ./yamls/create_qa_settings.yaml
-```
-
-Async worker pool 版:
-```bash
 python main_3_create_qa_async_pool.py \
   -s ./test_source/mds \
   -p ./yamls/create_qa_settings.yaml
@@ -27,7 +20,7 @@ python main_3_create_qa_async_pool.py \
 
 ### JSON/JSONL入力
 ```bash
-python main_3_create_qa.py \
+python main_3_create_qa_async_pool.py \
   -s ./test_source/jsons \
   -t original_text \
   -p ./yamls/create_qa_settings.yaml
@@ -35,7 +28,7 @@ python main_3_create_qa.py \
 
 ### `main_2` 出力入力
 ```bash
-python main_3_create_qa.py \
+python main_3_create_qa_async_pool.py \
   -s ./test_output/sanitization_test \
   -t sanitized_text \
   -p ./yamls/create_qa_settings.yaml
@@ -92,7 +85,7 @@ python main_3_create_qa.py \
 - 出力先: `output_path`
 
 ## Async worker pool 版
-`main_3_create_qa_async_pool.py` は item 単位で `create_qa_one()` を実行し、出力 JSONL の schema は同期版と互換にします。完了済み source は `*.status.jsonl` に保存して、再実行時にskipします。
+`main_3_create_qa_async_pool.py` は item 単位で `create_qa_one()` を実行します。完了済み source は `tmp/*.status.jsonl` に保存して、再実行時にskipします。
 
 - `max_in_flight`: プログラム全体で同時に外部APIへ投げる最大リクエスト数
 - 再実行時のskip: `tmp/*.status.jsonl` の `source_key` と既存出力の `source_files`
