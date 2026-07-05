@@ -2,7 +2,6 @@
 # OpenRouter settings
 # ------------------------------------
 openrouter: True
-inference_backend: "api_openai_comp"
 openrouter_api_key: "<YOUR_OPENROUTER_API_KEY>"
 openrouter_server_url: "https://openrouter.ai/api/v1"
 openrouter_model_name: "qwen/qwen3-30B-A3B-Instruct-2507"
@@ -29,9 +28,11 @@ infer_config:
   top_p: 1.0
 batch_size: 16
 
+# ------------------------------------
 # Async worker pool settings
 # max_in_flight is the global maximum number of external API requests in flight.
 # It is separate from batch_size; if omitted, async entrypoints use batch_size.
+# ------------------------------------
 max_in_flight: 16
 max_connections: 16
 max_keepalive_connections: 16
