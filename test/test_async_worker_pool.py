@@ -129,7 +129,7 @@ class AsyncWorkerPoolTests(unittest.IsolatedAsyncioTestCase):
                 if prompt == "ocr step":
                     content = "ocr-ok"
                 elif prompt == "objects step":
-                    content = '[["image1", "figure", 0, 0, 1000, 1000]]'
+                    content = '[["figure", 0, 0, 1000, 1000]]'
                 elif prompt == "content step ocr-ok":
                     content = "object-ok"
                 else:
@@ -162,7 +162,7 @@ class AsyncWorkerPoolTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(output_rows[0]["book"], "book.pdf")
             self.assertEqual(output_rows[0]["ocr_generator"], "fake-model")
             self.assertEqual(output_rows[0]["text"], "ocr-ok")
-            self.assertEqual(output_rows[0]["objects_bbox"], '[["image1", "figure", 0, 0, 1000, 1000]]')
+            self.assertEqual(output_rows[0]["objects_bbox"], '[["figure", 0, 0, 1000, 1000]]')
             self.assertEqual(output_rows[0]["object_content"], ["object-ok"])
             self.assertEqual(output_rows[0]["final_output"], "ocr-ok")
             self.assertNotIn("duplicate_check", output_rows[0])

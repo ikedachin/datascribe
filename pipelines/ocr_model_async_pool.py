@@ -80,10 +80,9 @@ class AsyncOcrPipeline:
         parsed = parse_objects_bbox(objects_bbox)
         outputs: List[str] = []
         for bbox in parsed:
-            if not isinstance(bbox, (list, tuple)) or len(bbox) < 6:
+            if not isinstance(bbox, (list, tuple)) or len(bbox) < 5:
                 continue
-            image = pair_images[0] if bbox[0] == "image1" or len(pair_images) == 1 else pair_images[1]
-            cropped = crop_image(image, bbox)
+            cropped = crop_image(pair_images[0], bbox)
             formatted_prompt = prompt.format(ocr=previous_text)
             outputs.append(await self._infer(formatted_prompt, [cropped]))
         return outputs
@@ -161,7 +160,10 @@ def parse_objects_bbox(objects_bbox: Any) -> List[Any]:
 def crop_image(image_path: Path, box_info: List[Any]) -> BytesIO:
     img = Image.open(image_path)
     img_array = np.array(img)
-    _, _, s_x, s_y, e_x, e_y = box_info
+    if len(box_info) >= 6:
+        _, _, s_x, s_y, e_x, e_y = box_info
+    else:
+        _, s_x, s_y, e_x, e_y = box_info
     s_x = int(float(s_x) * img_array.shape[1] * 0.9 * 0.001)
     s_y = int(float(s_y) * img_array.shape[0] * 0.9 * 0.001)
     e_x = int(float(e_x) * img_array.shape[1] * 1.1 * 0.001)
