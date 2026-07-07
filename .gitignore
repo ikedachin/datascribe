@@ -13,6 +13,7 @@ yamls/create_qa_settings.yaml
 /test_pdfs/aiplan_g_20251223.pdf
 /imgs/
 /test_output/
+/test_source/pdfs_2/
 
 **/__pycache__/
 

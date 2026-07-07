@@ -161,6 +161,9 @@ async def run_one_step(pipeline: Any, job: PipelineJob) -> PipelineJob:
                 job.pair_images,
                 outputs.get("objects_bbox"),
                 outputs["text"],
+                file_name=job.file_name,
+                book_name=job.book_name,
+                page=pipeline.extract_page_num(job.image_path),
             )
         else:
             outputs["object_content"] = []
