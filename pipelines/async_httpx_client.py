@@ -189,8 +189,9 @@ def write_jsonl(path: Path, rows: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         for row in rows:
-            json.dump(row, f, ensure_ascii=False)
-            f.write("\n")
+            # json.dump(row, f, ensure_ascii=False)
+            # f.write("\n")
+            f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
 def sort_rows_by_page(rows: list) -> list:
